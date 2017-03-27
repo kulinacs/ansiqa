@@ -96,6 +96,16 @@ def _get_tasks(role_path):
     else:
         with open(tasks_path) as tasks_file:
             tasks = yaml.safe_load(tasks_file)
+    current = 0
+    while (current < len(tasks)):
+        if 'include' in tasks[current].keys():
+            include_tasks_path = os.path.join(role_path, 'tasks',
+                                              tasks[current]['include'])
+            with open(include_tasks_path) as include_tasks_file:
+                include_tasks = yaml.safe_load(include_tasks_file)
+            tasks = tasks[:current] + include_tasks + tasks[current+1:]
+            current = current + len(include_tasks)
+        current += 1
     return tasks
 
 
