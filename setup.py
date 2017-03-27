@@ -36,7 +36,7 @@ setup(
 
     packages=find_packages(),
 
-    install_requires=['pyyaml'],
+    install_requires=['pyyaml', 'argparse', 'tabulate'],
 
     #extras_require={
     #    'dev': ['check-manifest'],

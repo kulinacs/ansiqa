@@ -3,6 +3,14 @@ from glob import glob
 import yaml
 
 
+def scan(path='.'):
+    roles = []
+    for root, dirs, files in os.walk(path):
+        if 'tasks' in dirs or 'handlers' in dirs:
+            roles.append(get_role(root, dirs, files))
+    return roles
+
+
 def get_role(role_path, dirs, files):
     role = {'name': os.path.basename(role_path),
             'path': role_path,
@@ -14,14 +22,30 @@ def get_role(role_path, dirs, files):
             'tasks': _get_tasks(role_path),
             'templates': _get_templates(role_path),
             'tests': 'tests' in dirs,
-            'vars': 'vars' in dirs}
+            'vars': _get_vars(role_path)}
     return role
+
+
+def dump_vars(roles):
+    vars_dict = {}
+    for role in roles:
+        if role['vars'] is not None:
+            vars_dict.update(role['vars'])
+    return vars_dict
+
+
+def dump_defaults(roles):
+    defaults_dict = {}
+    for role in roles:
+        if role['defaults'] is not None:
+            defaults_dict.update(role['defaults'])
+    return defaults_dict
 
 
 def _get_defaults(role_path):
     defaults_path = os.path.join(role_path, 'defaults', 'main.yml')
     if not os.path.exists(defaults_path):
-        defaults = []
+        defaults = None
     else:
         with open(defaults_path) as defaults_file:
             defaults = yaml.safe_load(defaults_file)
@@ -58,7 +82,7 @@ def _get_handlers(role_path):
 def _get_meta(role_path):
     meta_path = os.path.join(role_path, 'meta', 'main.yml')
     if not os.path.exists(meta_path):
-        meta = []
+        meta = None
     else:
         with open(meta_path) as meta_file:
             meta = yaml.safe_load(meta_file)
@@ -79,3 +103,13 @@ def _get_templates(role_path):
     templates_path = os.path.join(role_path, 'templates')
     templates = __list_files(templates_path)
     return templates
+
+
+def _get_vars(role_path):
+    vars_path = os.path.join(role_path, 'vars', 'main.yml')
+    if not os.path.exists(vars_path):
+        vars = None
+    else:
+        with open(vars_path) as vars_file:
+            vars = yaml.safe_load(vars_file)
+    return vars
