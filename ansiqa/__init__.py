@@ -25,6 +25,14 @@ def stats(args):
                   end='')
         else:
             print('---')
+    elif args.list_files:
+        for role in roles:
+            for filename in role['files']:
+                print(filename)
+    elif args.list_templates:
+        for role in roles:
+            for templatename in role['templates']:
+                print(templatename)
     else:
         headers = ['name', 'tasks', 'vars', 'defaults', 'README', 'meta']
         values = []
@@ -58,6 +66,11 @@ def main():
     stats_dumpers.add_argument('--dump-defaults', default=False,
                                action='store_true',
                                help='dump defaults as yaml')
+    stats_dumpers.add_argument('--list-files', default=False,
+                               action='store_true', help='list files')
+    stats_dumpers.add_argument('--list-templates', default=False,
+                               action='store_true',
+                               help='list templates')
     stats_parser.set_defaults(func=stats)
     args = parser.parse_args()
     args.func(args)
