@@ -22,7 +22,8 @@ def get_role(role_path, dirs, files):
             'tasks': _get_tasks(role_path),
             'templates': _get_templates(role_path),
             'tests': 'tests' in dirs,
-            'vars': _get_vars(role_path)}
+            'vars': _get_vars(role_path),
+            'extras': _get_extras(role_path)}
     return role
 
 
@@ -123,3 +124,13 @@ def _get_vars(role_path):
         with open(vars_path) as vars_file:
             vars = yaml.safe_load(vars_file)
     return vars
+
+
+def _get_extras(role_path):
+    extras_path = os.path.join(role_path, 'extras', 'main.yml')
+    if not os.path.exists(extras_path):
+        extras = None
+    else:
+        with open(extras_path) as extras_file:
+            extras = yaml.safe_load(extras_file)
+    return extras

@@ -34,7 +34,8 @@ def stats(args):
             for templatename in role['templates']:
                 print(templatename)
     else:
-        headers = ['name', 'tasks', 'vars', 'defaults', 'README', 'meta']
+        headers = ['name', 'tasks', 'vars', 'defaults', 'README', 'meta',
+                   'extras']
         values = []
         for role in roles:
             if role['vars'] is None:
@@ -47,7 +48,8 @@ def stats(args):
                 defaultsnum = len(role['defaults'].keys())
             values.append([role['name'], len(role['tasks']), varsnum,
                            defaultsnum, str(len(role['readme']) > 0),
-                           str(role['meta'] is not None)])
+                           str(role['meta'] is not None),
+                           str(role['extras'] is not None)])
         print(tabulate(values, headers, tablefmt="plain"))
 
 
