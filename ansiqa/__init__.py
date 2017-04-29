@@ -6,6 +6,11 @@ from termcolor import colored
 import os
 
 
+class ConfigException(Exception):
+    '''Raise if a value is not found in the config file'''
+    pass
+
+
 def load_config():
     '''Load and set defaults for the running configuration'''
     config = {}
@@ -17,10 +22,6 @@ def load_config():
     if os.path.exists(cwd_config_file):
         with open(cwd_config_file) as f:
             config.update(yaml.safe_load(f))
-    if 'meta' not in config:
-        config['meta'] = {}
-    if 'extra' not in config:
-        config['extra'] = {}
     return config
 
 
@@ -119,6 +120,8 @@ def meta(args, conf):
     '''Generate meta data for selected roles'''
     roles = _get_roles(args)
     values = []
+    if args.key not in conf:
+        raise ConfigException(args.key + ' not defined in configuration')
     for role in roles:
         metadir = os.path.join(role['path'], args.key)
         metafile = os.path.join(metadir, 'main.yml')
