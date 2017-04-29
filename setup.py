@@ -20,9 +20,9 @@ setup(
     url='https://github.com/kulinacs/ansiqa',
 
     author='Nicklaus McClendon',
-    author_email='pypa-dev@googlegroups.com',
+    author_email='nicklaus@kulinacs.com',
 
-    license='MIT',
+    license='ISC',
 
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -36,12 +36,7 @@ setup(
 
     packages=find_packages(),
 
-    install_requires=['pyyaml', 'argparse', 'tabulate'],
-
-    #extras_require={
-    #    'dev': ['check-manifest'],
-    #    'test': ['coverage'],
-    #},
+    install_requires=['pyyaml', 'argparse', 'tabulate', 'colored'],
 
     entry_points={
         'console_scripts': [
