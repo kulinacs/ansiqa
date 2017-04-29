@@ -3,7 +3,7 @@ from glob import glob
 import yaml
 
 
-def scan(path='.'):
+def scan(path=os.getcwd()):
     roles = []
     for root, dirs, files in os.walk(path):
         if 'tasks' in dirs or 'handlers' in dirs:
@@ -23,7 +23,7 @@ def get_role(role_path, dirs, files):
             'templates': _get_templates(role_path),
             'tests': 'tests' in dirs,
             'vars': _get_vars(role_path),
-            'extras': _get_extras(role_path)}
+            'extra': _get_extra(role_path)}
     return role
 
 
@@ -97,6 +97,8 @@ def _get_tasks(role_path):
     else:
         with open(tasks_path) as tasks_file:
             tasks = yaml.safe_load(tasks_file)
+        if tasks is None:
+            tasks = []
     current = 0
     while (current < len(tasks)):
         if 'include' in tasks[current].keys():
@@ -126,11 +128,11 @@ def _get_vars(role_path):
     return vars
 
 
-def _get_extras(role_path):
-    extras_path = os.path.join(role_path, 'extras', 'main.yml')
-    if not os.path.exists(extras_path):
-        extras = None
+def _get_extra(role_path):
+    extra_path = os.path.join(role_path, 'extra', 'main.yml')
+    if not os.path.exists(extra_path):
+        extra = None
     else:
-        with open(extras_path) as extras_file:
-            extras = yaml.safe_load(extras_file)
-    return extras
+        with open(extra_path) as extra_file:
+            extra = yaml.safe_load(extra_file)
+    return extra
