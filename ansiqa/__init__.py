@@ -205,8 +205,12 @@ def main():
     extra_parser.set_defaults(func=meta, key='extra')
 
     # Parse args
-    args = parser.parse_args()
-    args.func(args, conf)
+    try:
+        args = parser.parse_args()
+        args.func(args, conf)
+    except (AttributeError):
+        parser.print_help()
+        exit(0)
 
 if __name__ == '__main__':
     main()
