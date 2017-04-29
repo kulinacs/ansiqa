@@ -9,8 +9,8 @@ import os
 def load_config():
     '''Load and set defaults for the running configuration'''
     config = {}
-    user_config_file = os.path.join(os.path.expanduser('~'), '.ansiqa.yml')
-    cwd_config_file = os.path.join(os.getcwd(), '.ansiqa.yml')
+    user_config_file = os.path.join(os.path.expanduser('~'), '.ansiqa')
+    cwd_config_file = os.path.join(os.getcwd(), '.ansiqa')
     if os.path.exists(user_config_file):
         with open(user_config_file) as f:
             config.update(yaml.safe_load(f))
