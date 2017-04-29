@@ -4,6 +4,7 @@ import yaml
 
 
 def scan(path=os.getcwd()):
+    '''Return a list of roles given a path'''
     roles = []
     for root, dirs, files in os.walk(path):
         if 'tasks' in dirs or 'handlers' in dirs:
@@ -12,54 +13,62 @@ def scan(path=os.getcwd()):
 
 
 def get_role(role_path, dirs, files):
+    '''Return a role dict'''
     role = {'name': os.path.basename(role_path),
             'path': role_path,
             'readme': glob(os.path.join(role_path, 'README.*')),
-            'defaults': _get_defaults(role_path),
-            'files': _get_files(role_path),
-            'handlers': _get_handlers(role_path),
-            'meta': _get_meta(role_path),
+            'defaults': _get_attribute(role_path, 'defaults'),
+            'files': _get_listing(role_path, 'files'),
+            'handlers': _get_attribute(role_path, 'handlers'),
+            'meta': _get_attribute(role_path, 'meta'),
             'tasks': _get_tasks(role_path),
-            'templates': _get_templates(role_path),
+            'templates': _get_listing(role_path, 'templates'),
             'tests': 'tests' in dirs,
-            'vars': _get_vars(role_path),
-            'extra': _get_extra(role_path)}
+            'vars': _get_attribute(role_path, 'vars'),
+            'extra': _get_attribute(role_path, 'extra')}
     return role
 
 
 def dump_vars(roles):
+    '''Return a dict of all passed roles vars'''
     vars_dict = {}
     for role in roles:
-        if role['vars'] is not None:
+        if role['vars']:
             vars_dict.update(role['vars'])
     return vars_dict
 
 
 def dump_defaults(roles):
+    '''Return a dict of all passed roles defaults'''
     defaults_dict = {}
     for role in roles:
-        if role['defaults'] is not None:
+        if role['defaults']:
             defaults_dict.update(role['defaults'])
     return defaults_dict
 
 
-def _get_defaults(role_path):
-    defaults_path = os.path.join(role_path, 'defaults', 'main.yml')
-    if not os.path.exists(defaults_path):
-        defaults = None
+def _get_attribute(role_path, attr):
+    '''Get a generic Ansible role attribute'''
+    attr_path = os.path.join(role_path, attr, 'main.yml')
+    if not os.path.exists(attr_path):
+        attr_value = {}
     else:
-        with open(defaults_path) as defaults_file:
-            defaults = yaml.safe_load(defaults_file)
-    return defaults
+        with open(attr_path) as attr_file:
+            attr_value = yaml.safe_load(attr_file)
+        if attr_value is None:
+            attr_value = {}
+    return attr_value
 
 
-def _get_files(role_path):
-    files_path = os.path.join(role_path, 'files')
+def _get_listing(role_path, attr):
+    '''Get a listing of files in a directory for an Ansible role'''
+    files_path = os.path.join(role_path, attr)
     files = __list_files(files_path)
     return files
 
 
 def __list_files(file_path):
+    '''Recursively enumerate all files in a directory'''
     found_files = []
     if os.path.exists(file_path):
         for root, dirs, files in os.walk(file_path):
@@ -70,27 +79,8 @@ def __list_files(file_path):
     return found_files
 
 
-def _get_handlers(role_path):
-    handlers_path = os.path.join(role_path, 'handlers', 'main.yml')
-    if not os.path.exists(handlers_path):
-        handlers = []
-    else:
-        with open(handlers_path) as handlers_file:
-            handlers = yaml.safe_load(handlers_file)
-    return handlers
-
-
-def _get_meta(role_path):
-    meta_path = os.path.join(role_path, 'meta', 'main.yml')
-    if not os.path.exists(meta_path):
-        meta = None
-    else:
-        with open(meta_path) as meta_file:
-            meta = yaml.safe_load(meta_file)
-    return meta
-
-
 def _get_tasks(role_path):
+    '''Get a list of all tasks for an Ansible role'''
     tasks_path = os.path.join(role_path, 'tasks', 'main.yml')
     if not os.path.exists(tasks_path):
         tasks = []
@@ -110,29 +100,3 @@ def _get_tasks(role_path):
             current = current + len(include_tasks)
         current += 1
     return tasks
-
-
-def _get_templates(role_path):
-    templates_path = os.path.join(role_path, 'templates')
-    templates = __list_files(templates_path)
-    return templates
-
-
-def _get_vars(role_path):
-    vars_path = os.path.join(role_path, 'vars', 'main.yml')
-    if not os.path.exists(vars_path):
-        vars = None
-    else:
-        with open(vars_path) as vars_file:
-            vars = yaml.safe_load(vars_file)
-    return vars
-
-
-def _get_extra(role_path):
-    extra_path = os.path.join(role_path, 'extra', 'main.yml')
-    if not os.path.exists(extra_path):
-        extra = None
-    else:
-        with open(extra_path) as extra_file:
-            extra = yaml.safe_load(extra_file)
-    return extra
