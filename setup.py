@@ -12,7 +12,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ansiqa',
-    version='0.1.0',
+    version='0.1.1',
 
     description='Anisible Role Quality Assurance',
     long_description=long_description,
@@ -36,7 +36,7 @@ setup(
 
     packages=find_packages(),
 
-    install_requires=['pyyaml', 'argparse', 'tabulate', 'colored'],
+    install_requires=['pyyaml', 'argparse', 'tabulate', 'colored', 'jinja2'],
 
     entry_points={
         'console_scripts': [
