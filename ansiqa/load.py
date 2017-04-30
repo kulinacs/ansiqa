@@ -1,6 +1,6 @@
 import os
 from glob import glob
-import yaml
+import ruamel.yaml as yaml
 
 
 def scan(path=os.getcwd()):

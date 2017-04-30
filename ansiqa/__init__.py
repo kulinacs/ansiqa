@@ -1,11 +1,12 @@
 import argparse
 from ansiqa import load
-import yaml
+import ruamel.yaml as yaml
 from tabulate import tabulate
 from termcolor import colored
 from glob import glob
 from jinja2 import Environment, FileSystemLoader
 import os
+from copy import deepcopy
 
 
 class ConfigException(Exception):
@@ -155,7 +156,7 @@ def meta(args):
     for role in roles:
         metadir = os.path.join(role['path'], args.key)
         metafile = os.path.join(metadir, 'main.yml')
-        old_dict = dict(role[args.key])
+        old_dict = deepcopy(role[args.key])
         if args.augment:
             __augment_dict(role[args.key], args.conf[args.key])
         elif args.replace:
