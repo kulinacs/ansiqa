@@ -183,14 +183,15 @@ def docs(args):
     env = Environment(
         loader=FileSystemLoader(os.path.dirname(args.template)),
         lstrip_blocks=True,
-        trim_blocks=True)
+        trim_blocks=True,
+        keep_trailing_newline=True)
     filename_parts = os.path.basename(args.template).split('.')
     filename = filename_parts[0] + '.' + filename_parts[1]
     for role in roles:
         role = load.printable(role)
         readme_template = env.get_template(os.path.basename(args.template))
         if not args.check:
-            with open(os.path.join(role['path'], filename)) as f:
+            with open(os.path.join(role['path'], filename), 'w') as f:
                 f.write(readme_template.render(role))
         else:
             print(readme_template.render(role))
