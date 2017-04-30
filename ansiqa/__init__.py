@@ -196,7 +196,7 @@ def docs(args):
             with open(os.path.join(role['path'], filename), 'w') as f:
                 f.write(readme_template.render(role))
         else:
-            print(readme_template.render(role))
+            print(readme_template.render(role), end='')
 
 
 def main():
