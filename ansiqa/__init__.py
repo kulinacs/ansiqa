@@ -67,6 +67,44 @@ def _get_roles(args):
     return roles
 
 
+def __dependency_depth(role, allroles):
+    '''Calculate the dependency depth for a single role'''
+    try:
+        depths = []
+        role['dep_touched'] = True
+        if role['meta']['dependencies'] is not None and role['meta']['dependencies']:
+            for dep in role['meta']['dependencies']:
+                if isinstance(dep, dict):
+                    dep = dep['role']
+                if dep not in allroles:
+                    role['dep_depth'] = '?'
+                    return
+                else:
+                    if 'dep_depth' in allroles[dep]:
+                        if allroles[dep]['dep_depth'] == '?':
+                            role['dep_depth'] = '?'
+                            return
+                        else:
+                            depths.append(allroles[dep]['dep_depth'])
+                    else:
+                        if not allroles[dep]['dep_touched']:
+                            __dependency_depth(allroles[dep], allroles)
+                            depths.append(allroles[dep]['dep_depth'])
+            role['dep_depth'] = max(depths) + 1
+        else:
+            role['dep_depth'] = 0
+    except (KeyError):
+        role['dep_depth'] = 0
+
+
+def _dependency_depth(allroles):
+    '''Calculate the dependency depth for all roles'''
+    for role in allroles:
+        allroles[role]['dep_touched'] = False
+    for role in allroles:
+        __dependency_depth(allroles[role], allroles)
+
+
 def stats(args):
     '''Print stats about the selected roles'''
     roles = _get_roles(args)
@@ -100,8 +138,12 @@ def stats(args):
     # Print general stats if no option selected
     else:
         headers = ['name', 'tasks', 'vars', 'defaults', 'README', 'meta',
-                   'extra']
+                   'extra', 'dependency depth']
         values = []
+        allroles = {}
+        for role in roles:
+            allroles[role['name']] = role
+        _dependency_depth(allroles)
         for role in roles:
             varsnum = len(role['vars'].keys())
             defaultsnum = len(role['defaults'].keys())
@@ -118,7 +160,8 @@ def stats(args):
             else:
                 extra = colored('none', 'red')
             values.append([role['name'], len(role['tasks']), varsnum,
-                           defaultsnum, readme, meta, extra])
+                           defaultsnum, readme, meta, extra,
+                           role['dep_depth']])
         print(tabulate(values, headers, tablefmt="plain"))
 
 
