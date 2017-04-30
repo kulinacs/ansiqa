@@ -75,8 +75,8 @@ def stats(args):
     if args.dump_vars:
         vars_dict = load.dump_vars(roles)
         if vars_dict:
-            print('---\n' + yaml.dump(vars_dict, default_flow_style=False),
-                  end='')
+            print('---\n' + yaml.dump(vars_dict, default_flow_style=False,
+                                      indent=4, block_seq_indent=2), end='')
         else:
             print('---')
 
@@ -84,8 +84,8 @@ def stats(args):
     elif args.dump_defaults:
         defaults_dict = load.dump_defaults(roles)
         if defaults_dict:
-            print('---\n' + yaml.dump(defaults_dict, default_flow_style=False),
-                  end='')
+            print('---\n' + yaml.dump(defaults_dict, default_flow_style=False,
+                                      indent=4, block_seq_indent=2), end='')
         else:
             print('---')
     elif args.list_files:
@@ -168,7 +168,8 @@ def meta(args):
                 os.makedirs(metadir)
             with open(metafile, 'w') as f:
                 f.write('---\n')
-                f.write(yaml.dump(role[args.key], default_flow_style=False))
+                f.write(yaml.dump(role[args.key], default_flow_style=False,
+                                  indent=4, block_seq_indent=2))
         if (old_dict == role[args.key]):
             values.append([role['name'], colored('ok', 'green')])
         else:
