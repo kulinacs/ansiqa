@@ -3,6 +3,8 @@ from ansiqa import load
 import yaml
 from tabulate import tabulate
 from termcolor import colored
+from glob import glob
+from jinja2 import Environment, FileSystemLoader
 import os
 
 
@@ -12,17 +14,45 @@ class ConfigException(Exception):
 
 
 def load_config():
-    '''Load and set defaults for the running configuration'''
+    '''Load the running configuration'''
     config = {}
+    template = None
     user_config_file = os.path.join(os.path.expanduser('~'), '.ansiqa')
     cwd_config_file = os.path.join(os.getcwd(), '.ansiqa')
-    if os.path.exists(user_config_file):
+    if os.path.isfile(user_config_file):
         with open(user_config_file) as f:
             config.update(yaml.safe_load(f))
-    if os.path.exists(cwd_config_file):
+    if os.path.isfile(cwd_config_file):
         with open(cwd_config_file) as f:
             config.update(yaml.safe_load(f))
     return config
+
+
+def load_template(config):
+    '''
+    Attempt to load the template file, first from the file specified by
+    the config file, then by the default README.*.j2 glob. First checks
+    the current directory, then the home directory, then an absolute path.
+    '''
+    if 'template' in config:
+        if os.path.isfile(os.path.join(os.getcwd(), config['template'])):
+            template = os.path.join(os.getcwd(), config['template'])
+        elif os.path.isfile(os.path.join(os.path.expanduser('~'),
+                                         config['template'])):
+            template = join(os.path.expanduser('~'), config['template'])
+        elif os.path.isfile(config['template']):
+            template = config['template']
+        else:
+            raise ConfigException('Template file not found')
+    else:
+        if glob(os.path.join(os.getcwd(), 'README.*.j2')):
+            template = glob(os.path.join(os.getcwd(), 'README.*.j2'))[0]
+        elif glob(os.path.join(os.path.expanduser('~'), 'README.*.j2')):
+            template = glob(os.path.join(os.path.expanduser('~'),
+                                         'README.*.j2'))[0]
+        else:
+            template = None
+    return template
 
 
 def _get_roles(args):
@@ -36,7 +66,7 @@ def _get_roles(args):
     return roles
 
 
-def stats(args, conf):
+def stats(args):
     '''Print stats about the selected roles'''
     roles = _get_roles(args)
 
@@ -116,22 +146,22 @@ def __replace_dict(old, update):
             pass
 
 
-def meta(args, conf):
+def meta(args):
     '''Generate meta data for selected roles'''
     roles = _get_roles(args)
     values = []
-    if args.key not in conf:
+    if args.key not in args.conf:
         raise ConfigException(args.key + ' not defined in configuration')
     for role in roles:
         metadir = os.path.join(role['path'], args.key)
         metafile = os.path.join(metadir, 'main.yml')
         old_dict = dict(role[args.key])
         if args.augment:
-            __augment_dict(role[args.key], conf[args.key])
+            __augment_dict(role[args.key], args.conf[args.key])
         elif args.replace:
-            __replace_dict(role[args.key], conf[args.key])
+            __replace_dict(role[args.key], args.conf[args.key])
         else:
-            role[args.key].update(conf[args.key])
+            role[args.key].update(args.conf[args.key])
         if not args.check:
             if not os.path.exists(metadir):
                 os.makedirs(metadir)
@@ -145,13 +175,30 @@ def meta(args, conf):
     print(tabulate(values, tablefmt="plain"))
 
 
-def docs(args, conf):
-    pass
+def docs(args):
+    '''Generate documentation for the selected roles'''
+    roles = _get_roles(args)
+    if args.template is None:
+        raise ConfigException('No usable template found')
+    env = Environment(
+        loader=FileSystemLoader(os.path.dirname(args.template)),
+        lstrip_blocks=True,
+        trim_blocks=True)
+    filename_parts = os.path.basename(args.template).split('.')
+    filename = filename_parts[0] + '.' + filename_parts[1]
+    for role in roles:
+        role = load.printable(role)
+        readme_template = env.get_template(os.path.basename(args.template))
+        if not args.check:
+            with open(os.path.join(role['path'], filename)) as f:
+                f.write(readme_template.render(role))
+        else:
+            print(readme_template.render(role))
 
 
 def main():
-    # Load Conf
     conf = load_config()
+    template = load_template(conf)
 
     # Parsers
     parser = argparse.ArgumentParser(description='Utilities for managing '
@@ -181,7 +228,7 @@ def main():
                              help='specific role(s) to operate on')
     meta_parser.add_argument('-C', '--check', default=False,
                              action='store_true', help='Don\'t change'
-                             'values, just show what would change')
+                             ' values, just show what would change')
     meta_options = meta_parser.add_mutually_exclusive_group()
     meta_options.add_argument('--augment', default=False,
                               action='store_true', help='Only add value,'
@@ -189,7 +236,7 @@ def main():
     meta_options.add_argument('--replace', default=False,
                               action='store_true', help='Only change'
                               ' existing values, don\'t add any')
-    meta_parser.set_defaults(func=meta, key='meta')
+    meta_parser.set_defaults(func=meta, conf=conf, key='meta')
 
     # Extra parser
     extra_parser = subparsers.add_parser('extra', help='Generate extra meta')
@@ -197,7 +244,7 @@ def main():
                               help='specific role(s) to operate on')
     extra_parser.add_argument('-C', '--check', default=False,
                               action='store_true', help='Don\'t change'
-                              'values, just show what would change')
+                              ' values, just show what would change')
     extra_options = extra_parser.add_mutually_exclusive_group()
     extra_options.add_argument('--augment', default=False,
                                action='store_true', help='Only add value,'
@@ -205,12 +252,21 @@ def main():
     extra_options.add_argument('--replace', default=False,
                                action='store_true', help='Only change'
                                ' existing values, don\'t add any')
-    extra_parser.set_defaults(func=meta, key='extra')
+    extra_parser.set_defaults(func=meta, conf=conf, key='extra')
+
+    # Docs parser
+    docs_parser = subparsers.add_parser('docs', help='Generate README')
+    docs_parser.add_argument('-r', '--rolename', type=str, nargs='*',
+                             help='specific role(s) to operate on')
+    docs_parser.add_argument('-C', '--check', default=False,
+                             action='store_true', help='Don\'t change'
+                             ' the README, just print the new README')
+    docs_parser.set_defaults(func=docs, conf=conf, template=template)
 
     # Parse args
     try:
         args = parser.parse_args()
-        args.func(args, conf)
+        args.func(args)
     except (AttributeError):
         parser.print_help()
         exit(0)

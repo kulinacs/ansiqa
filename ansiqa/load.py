@@ -47,10 +47,17 @@ def dump_defaults(roles):
     return defaults_dict
 
 
+def printable(role):
+    to_print = ['defaults', 'files', 'handlers', 'templates', 'vars']
+    for item in to_print:
+        role[item] = yaml.dump(role[item], default_flow_style=False).rstrip('\n')
+    return role
+
+
 def _get_attribute(role_path, attr):
     '''Get a generic Ansible role attribute'''
     attr_path = os.path.join(role_path, attr, 'main.yml')
-    if not os.path.exists(attr_path):
+    if not os.path.isfile(attr_path):
         attr_value = {}
     else:
         with open(attr_path) as attr_file:
@@ -70,7 +77,7 @@ def _get_listing(role_path, attr):
 def __list_files(file_path):
     '''Recursively enumerate all files in a directory'''
     found_files = []
-    if os.path.exists(file_path):
+    if os.path.isfile(file_path):
         for root, dirs, files in os.walk(file_path):
             found_files.extend([os.path.join(root, filename)
                                 for filename in files])
@@ -82,7 +89,7 @@ def __list_files(file_path):
 def _get_tasks(role_path):
     '''Get a list of all tasks for an Ansible role'''
     tasks_path = os.path.join(role_path, 'tasks', 'main.yml')
-    if not os.path.exists(tasks_path):
+    if not os.path.isfile(tasks_path):
         tasks = []
     else:
         with open(tasks_path) as tasks_file:
