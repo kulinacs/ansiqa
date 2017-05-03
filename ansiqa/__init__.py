@@ -327,7 +327,7 @@ def main():
                               ' values, just show what would change')
     extra_options = extra_parser.add_mutually_exclusive_group()
     extra_options.add_argument('--augment', default=False,
-                               action='store_true', help='Only add value,'
+                               action='store_true', help='Only add values,'
                                ' don\'t change existing')
     extra_options.add_argument('--replace', default=False,
                                action='store_true', help='Only change'

@@ -48,7 +48,7 @@ def dump_defaults(roles):
 
 
 def printable(role):
-    to_print = ['defaults', 'files', 'handlers', 'templates', 'vars']
+    to_print = ['defaults', 'vars']
     for item in to_print:
         role[item] = yaml.dump(role[item], default_flow_style=False,
                                indent=4, block_seq_indent=2).rstrip('\n')
