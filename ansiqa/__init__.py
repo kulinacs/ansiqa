@@ -269,8 +269,11 @@ def depends(args):
         for role in tree:
             for dep in tree[role]['depends']:
                 graph.add_edge(role, dep)
-        graph.layout()
-        graph.draw(args.graph)
+        if args.graph == '-':
+            print(graph, end='')
+        else:
+            with open(args.graph, 'w') as f:
+                f.write(graph.string())
 
 
 def main():
@@ -344,8 +347,8 @@ def main():
     depends_parser = subparsers.add_parser('depends',
                                            help='Dependecy utilities')
     depends_parser.add_argument('-G', '--graph', default=None,
-                                type=str, help='Generate a graphviz'
-                                ' dot file')
+                                const='-', type=str, nargs='?',
+                                help='Generate a graphviz dot file')
     depends_parser.set_defaults(func=depends)
 
     # Parse args
