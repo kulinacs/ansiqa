@@ -78,7 +78,7 @@ def _get_listing(role_path, attr):
 def __list_files(file_path):
     '''Recursively enumerate all files in a directory'''
     found_files = []
-    if os.path.isfile(file_path):
+    if os.path.exists(file_path):
         for root, dirs, files in os.walk(file_path):
             found_files.extend([os.path.join(root, filename)
                                 for filename in files])
