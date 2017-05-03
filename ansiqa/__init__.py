@@ -7,6 +7,7 @@ from glob import glob
 from jinja2 import Environment, FileSystemLoader
 import os
 from copy import deepcopy
+import pygraphviz as pgv
 
 
 class ConfigException(Exception):
@@ -67,44 +68,6 @@ def _get_roles(args):
     return roles
 
 
-def __dependency_depth(role, allroles):
-    '''Calculate the dependency depth for a single role'''
-    try:
-        depths = []
-        role['dep_touched'] = True
-        if role['meta']['dependencies'] is not None and role['meta']['dependencies']:
-            for dep in role['meta']['dependencies']:
-                if isinstance(dep, dict):
-                    dep = dep['role']
-                if dep not in allroles:
-                    role['dep_depth'] = '?'
-                    return
-                else:
-                    if 'dep_depth' in allroles[dep]:
-                        if allroles[dep]['dep_depth'] == '?':
-                            role['dep_depth'] = '?'
-                            return
-                        else:
-                            depths.append(allroles[dep]['dep_depth'])
-                    else:
-                        if not allroles[dep]['dep_touched']:
-                            __dependency_depth(allroles[dep], allroles)
-                            depths.append(allroles[dep]['dep_depth'])
-            role['dep_depth'] = max(depths) + 1
-        else:
-            role['dep_depth'] = 0
-    except (KeyError):
-        role['dep_depth'] = 0
-
-
-def _dependency_depth(allroles):
-    '''Calculate the dependency depth for all roles'''
-    for role in allroles:
-        allroles[role]['dep_touched'] = False
-    for role in allroles:
-        __dependency_depth(allroles[role], allroles)
-
-
 def stats(args):
     '''Print stats about the selected roles'''
     roles = _get_roles(args)
@@ -138,12 +101,11 @@ def stats(args):
     # Print general stats if no option selected
     else:
         headers = ['name', 'tasks', 'vars', 'defaults', 'README', 'meta',
-                   'extra', 'dependency depth']
+                   'extra']
         values = []
         allroles = {}
         for role in roles:
             allroles[role['name']] = role
-        _dependency_depth(allroles)
         for role in roles:
             varsnum = len(role['vars'].keys())
             defaultsnum = len(role['defaults'].keys())
@@ -160,8 +122,8 @@ def stats(args):
             else:
                 extra = colored('none', 'red')
             values.append([role['name'], len(role['tasks']), varsnum,
-                           defaultsnum, readme, meta, extra,
-                           role['dep_depth']])
+                           defaultsnum, readme, meta, extra])
+        values.sort()
         print(tabulate(values, headers, tablefmt="plain"))
 
 
@@ -217,6 +179,7 @@ def meta(args):
             values.append([role['name'], colored('ok', 'green')])
         else:
             values.append([role['name'], colored('changed', 'yellow')])
+    values.sort()
     print(tabulate(values, tablefmt="plain"))
 
 
@@ -240,6 +203,74 @@ def docs(args):
                 f.write(readme_template.render(role))
         else:
             print(readme_template.render(role), end='')
+
+
+def _build_tree(roles):
+    tree = {}
+    for role in roles:
+        tree[role['name']] = {'depends': set()}
+        try:
+            if role['meta']['dependencies'] is not None:
+                for dep in role['meta']['dependencies']:
+                    if isinstance(dep, dict):
+                        dep = dep['role']
+                    tree[role['name']]['depends'].add(dep)
+        except:
+            pass
+    return tree
+
+
+def _depended_on(tree):
+    for role in tree:
+        tree[role]['depended'] = set()
+    for role in tree:
+        for dep in tree[role]['depends']:
+            tree[dep]['depended'].add(role)
+
+
+def _dependency_depth(tree):
+    def __dependency_depth(role):
+        try:
+            return tree[role]['depth']
+        except (KeyError):
+            if len(tree[role]['depends']) == 0:
+                tree[role]['depth'] = 0
+            else:
+                tree[role]['depth'] = max([__dependency_depth(dep) for dep in
+                                           tree[role]['depends']]) + 1
+            return tree[role]['depth']
+    for role in tree:
+        __dependency_depth(role)
+
+
+def depends(args):
+    roles = load.scan()
+    tree = _build_tree(roles)
+    if args.graph is None:
+        _depended_on(tree)
+        _dependency_depth(tree)
+        keys = ['role', 'depends', 'depended', 'depth']
+        values = []
+        for role in tree:
+            values.append([role,
+                           len(tree[role]['depends']),
+                           len(tree[role]['depended']),
+                           tree[role]['depth']])
+        values.sort()
+        print(tabulate(values, keys, tablefmt="plain"))
+    else:
+        graph = pgv.AGraph(directed=True)
+        graph.node_attr['style'] = 'filled,rounded'
+        graph.node_attr['shape'] = 'box'
+        graph.node_attr['fontcolor'] = '#000000'
+
+        for role in tree:
+            graph.add_node(role)
+        for role in tree:
+            for dep in tree[role]['depends']:
+                graph.add_edge(role, dep)
+        graph.layout()
+        graph.draw(args.graph)
 
 
 def main():
@@ -308,6 +339,14 @@ def main():
                              action='store_true', help='Don\'t change'
                              ' the README, just print the new README')
     docs_parser.set_defaults(func=docs, conf=conf, template=template)
+
+    # Depends parser
+    depends_parser = subparsers.add_parser('depends',
+                                           help='Dependecy utilities')
+    depends_parser.add_argument('-G', '--graph', default=None,
+                                type=str, help='Generate a graphviz'
+                                ' dot file')
+    depends_parser.set_defaults(func=depends)
 
     # Parse args
     try:
