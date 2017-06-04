@@ -36,7 +36,7 @@ setup(
 
     packages=find_packages(),
 
-    install_requires=['ruamel.yaml', 'argparse', 'tabulate', 'termcolor', 'jinja2', 'pygraphviz'],
+    install_requires=['ruamel.yaml<0.15', 'argparse', 'tabulate', 'termcolor', 'jinja2', 'pygraphviz'],
 
     entry_points={
         'console_scripts': [
