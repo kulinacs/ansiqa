@@ -12,14 +12,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ansiqa',
-    version='0.1.3',
+    version='0.2.0',
 
     description='Anisible Role Quality Assurance',
     long_description=long_description,
 
     url='https://github.com/kulinacs/ansiqa',
 
-    author='Nicklaus McClendon',
+    author='kulinacs',
     author_email='nicklaus@kulinacs.com',
 
     license='ISC',
