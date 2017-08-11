@@ -104,7 +104,9 @@ def _get_tasks(role_path):
                                               tasks[current]['include'])
             with open(include_tasks_path) as include_tasks_file:
                 include_tasks = yaml.safe_load(include_tasks_file)
+                if include_tasks is None:
+                    include_tasks = []
             tasks = tasks[:current] + include_tasks + tasks[current+1:]
-            current = current + len(include_tasks)
-        current += 1
+        else:
+            current += 1
     return tasks
